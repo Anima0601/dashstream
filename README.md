@@ -68,8 +68,8 @@ Follow these instructions to get a copy of the project up and running on your lo
 1.  **Clone the repository:**
 
     ```bash
-    git clone <repository-url> # Replace with your actual repository URL
-    cd personalized-content-dashboard # Or the name of your project folder (e.g., frontend if it's a subfolder)
+    git clone https://github.com/Anima0601/dashstream 
+    cd frontend 
     ```
 
 2.  **Install dependencies:**
