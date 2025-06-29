@@ -1,3 +1,5 @@
+// src/data/mockSocialPosts.ts
+
 import { SocialPost } from '../types/social';
 
 export const mockSocialPosts: SocialPost[] = [
@@ -5,12 +7,11 @@ export const mockSocialPosts: SocialPost[] = [
     id: 'soc1',
     author: {
       name: 'TechExplorer',
-      avatarUrl: 'https://via.placeholder.com/40/FF5733/FFFFFF?text=TE',
+      avatarUrl: 'https://picsum.photos/id/1018/40', // Changed to picsum.photos
     },
-    // NEW: Add the 'title' property here
-    title: 'AI Breakthrough in Robotics!', // <-- ADD THIS LINE
+    title: 'AI Breakthrough in Robotics!',
     content: "Just witnessed an incredible AI breakthrough in robotics! The future is here. #AI #Robotics #Innovation",
-    imageUrl: 'https://source.unsplash.com/random/400x300/?robot',
+    imageUrl: 'https://picsum.photos/id/237/400/300', // Changed to picsum.photos
     hashtags: ['AI', 'Robotics', 'Innovation'],
     likes: 1250,
     comments: 230,
@@ -21,12 +22,11 @@ export const mockSocialPosts: SocialPost[] = [
     id: 'soc2',
     author: {
       name: 'SportsFanatic',
-      avatarUrl: 'https://via.placeholder.com/40/33FF57/FFFFFF?text=SF',
+      avatarUrl: 'https://picsum.photos/id/1015/40', // Changed to picsum.photos
     },
-    // NEW: Add the 'title' property here
-    title: 'Underdogs Win Big Game!', // <-- ADD THIS LINE
+    title: 'Underdogs Win Big Game!',
     content: "What a game! The underdogs pulled off an amazing win. My jaw is still on the floor! #Sports #Gaming #Unexpected",
-    imageUrl: 'https://source.unsplash.com/random/400x300/?basketball',
+    imageUrl: 'https://picsum.photos/id/1025/400/300', // Changed to picsum.photos
     hashtags: ['Sports', 'Gaming', 'Unexpected'],
     likes: 890,
     comments: 110,
@@ -37,12 +37,11 @@ export const mockSocialPosts: SocialPost[] = [
     id: 'soc3',
     author: {
       name: 'FoodieAdventures',
-      avatarUrl: 'https://via.placeholder.com/40/3357FF/FFFFFF?text=FA',
+      avatarUrl: 'https://picsum.photos/id/103/40', // Changed to picsum.photos
     },
-    // NEW: Add the 'title' property here
-    title: 'Delicious Street Food Discovery!', // <-- ADD THIS LINE
+    title: 'Delicious Street Food Discovery!',
     content: "Discovered the most delicious street food today! This fusion taco is a game changer. #Foodie #StreetFood #Tacos",
-    imageUrl: 'https://source.unsplash.com/random/400x300/?taco',
+    imageUrl: 'https://picsum.photos/id/1084/400/300', // Changed to picsum.photos
     hashtags: ['Foodie', 'StreetFood', 'Tacos'],
     likes: 2100,
     comments: 340,
@@ -53,12 +52,11 @@ export const mockSocialPosts: SocialPost[] = [
     id: 'soc4',
     author: {
       name: 'TravelBug',
-      avatarUrl: 'https://via.placeholder.com/40/FF33CC/FFFFFF?text=TB',
+      avatarUrl: 'https://picsum.photos/id/1043/40', // Changed to picsum.photos
     },
-   
-    title: 'Breathtaking Mountain Sunrise!', 
+    title: 'Breathtaking Mountain Sunrise!',
     content: "Sunrise over the mountains was breathtaking. Truly felt connected to nature. #Travel #Nature #Mountains",
-    imageUrl: 'https://source.unsplash.com/random/400x300/?mountains',
+    imageUrl: 'https://picsum.photos/id/1069/400/300', // Changed to picsum.photos
     hashtags: ['Travel', 'Nature', 'Mountains'],
     likes: 1500,
     comments: 190,
@@ -69,12 +67,11 @@ export const mockSocialPosts: SocialPost[] = [
     id: 'soc5',
     author: {
       name: 'ArtLover',
-      avatarUrl: 'https://via.placeholder.com/40/CCFF33/FFFFFF?text=AL',
+      avatarUrl: 'https://picsum.photos/id/1080/40', // Changed to picsum.photos
     },
-   
-    title: 'Gallery Visit Inspiration!', 
+    title: 'Gallery Visit Inspiration!',
     content: "Spent the afternoon at the gallery. So much talent and emotion captured in every piece. #Art #Culture #Gallery",
-    imageUrl: 'https://source.unsplash.com/random/400x300/?painting',
+    imageUrl: 'https://picsum.photos/id/1081/400/300', // Changed to picsum.photos
     hashtags: ['Art', 'Culture', 'Gallery'],
     likes: 950,
     comments: 80,

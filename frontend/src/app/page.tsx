@@ -4,18 +4,42 @@
 import MainLayout from '../components/MainLayout';
 import NewsCard from '../components/NewsCard';
 import MovieCard from '../components/MovieCard';
-import SocialPostCard from '../components/SocialPostCard';
+import SocialPostCard from '../components/SocialPostCard'; // Keep this if not all are sortable
 import Header from '../components/Header';
 import { useAppSelector } from '../redux/hooks';
 import { useGetTopHeadlinesQuery, useSearchNewsQuery } from '../redux/services/newsApi';
 import { useGetPopularMoviesQuery, useSearchMoviesQuery } from '../redux/services/tmdbApi';
-import { useGetTrendingSocialPostsQuery, useSearchSocialPostsQuery } from '../redux/services/socialApi'; // UPDATED IMPORTS
+import { useGetTrendingSocialPostsQuery, useSearchSocialPostsQuery } from '../redux/services/socialApi';
 import { NewsArticle } from '../types/news';
 import { Movie } from '../types/tmdb';
 import { SocialPost } from '../types/social';
 import React, { useState, useCallback, useEffect } from 'react';
 
-// --- Helper Components ---
+// --- Dnd-kit Imports ---
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+// --- END Dnd-kit Imports ---
+
+// Import the new SortableCard components
+import SortableNewsCard from '../components/SortableNewsCard';
+import SortableMovieCard from '../components/SortableMovieCard';
+import SortableSocialPostCard from '../components/SortableSocialPostCard'; // NEW IMPORT
+
+
+// --- Helper Components (keep them as they are) ---
 const LoadingSpinner: React.FC<{ message: string }> = ({ message }) => (
   <div className="flex justify-center items-center h-24">
     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -46,7 +70,13 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newsPage, setNewsPage] = useState(1);
   const [moviePage, setMoviePage] = useState(1);
-  const [socialPage, setSocialPage] = useState(1); // State for Social Post pagination
+  const [socialPage, setSocialPage] = useState(1);
+
+  // --- NEW STATE FOR DRAG-AND-DROP NEWS, MOVIES & SOCIAL POSTS ---
+  const [sortableNewsArticles, setSortableNewsArticles] = useState<NewsArticle[]>([]);
+  const [sortableMovies, setSortableMovies] = useState<Movie[]>([]);
+  const [sortableSocialPosts, setSortableSocialPosts] = useState<SocialPost[]>([]); // NEW STATE for social posts
+  // --- END NEW STATE ---
 
   const favoriteCategories = useAppSelector(
     (state) => state.userPreferences.favoriteCategories
@@ -54,9 +84,8 @@ export default function Home() {
 
   const categoryToFetch = favoriteCategories.length > 0 ? favoriteCategories[0] : 'general';
   const NEWS_PAGE_SIZE = 9;
-  const MOVIE_PAGE_SIZE = 20; // TMDB default is 20 per page
-  const SOCIAL_PAGE_SIZE = 10; // Assuming a page size for mock API
-
+  const MOVIE_PAGE_SIZE = 20;
+  const SOCIAL_PAGE_SIZE = 10;
 
   // --- News API Queries ---
   const {
@@ -110,7 +139,7 @@ export default function Home() {
     error: socialError,
     isLoading: socialIsLoading,
     isFetching: socialIsFetching
-  } = useGetTrendingSocialPostsQuery({ page: socialPage }, { // Corrected parameter usage
+  } = useGetTrendingSocialPostsQuery({ page: socialPage }, {
     skip: searchQuery !== '',
   });
 
@@ -119,16 +148,105 @@ export default function Home() {
     error: socialSearchError,
     isLoading: socialSearchIsLoading,
     isFetching: socialSearchIsFetching
-  } = useSearchSocialPostsQuery({ query: searchQuery, page: socialPage }, { // Corrected parameter usage
+  } = useSearchSocialPostsQuery({ query: searchQuery, page: socialPage }, {
     skip: searchQuery === '',
   });
+
+
+  // --- Dnd-kit Sensors (shared for all contexts) ---
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // --- Dnd-kit Drag End Handler for NEWS ---
+  const handleDragEndNews = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setSortableNewsArticles((prevArticles) => {
+        const oldIndex = prevArticles.findIndex(article => (article.url + article.publishedAt) === active.id);
+        const newIndex = prevArticles.findIndex(article => (article.url + article.publishedAt) === over?.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          return arrayMove(prevArticles, oldIndex, newIndex);
+        }
+        return prevArticles;
+      });
+    }
+  };
+
+  // --- Dnd-kit Drag End Handler for MOVIES ---
+  const handleDragEndMovies = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setSortableMovies((prevMovies) => {
+        const oldIndex = prevMovies.findIndex(movie => String(movie.id) === String(active.id));
+        const newIndex = prevMovies.findIndex(movie => String(movie.id) === String(over?.id));
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          return arrayMove(prevMovies, oldIndex, newIndex);
+        }
+        return prevMovies;
+      });
+    }
+  };
+
+  // --- Dnd-kit Drag End Handler for SOCIAL POSTS ---
+  const handleDragEndSocialPosts = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setSortableSocialPosts((prevPosts) => {
+        const oldIndex = prevPosts.findIndex(post => String(post.id) === String(active.id));
+        const newIndex = prevPosts.findIndex(post => String(post.id) === String(over?.id));
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          return arrayMove(prevPosts, oldIndex, newIndex);
+        }
+        return prevPosts;
+      });
+    }
+  };
+  // --- END Dnd-kit Drag End Handlers ---
+
+
+  // --- Effect to update sortableNewsArticles when news data changes ---
+  useEffect(() => {
+    if (searchQuery && newsSearchData?.articles) {
+      setSortableNewsArticles(newsSearchData.articles);
+    } else if (!searchQuery && newsCategoryData?.articles) {
+      setSortableNewsArticles(newsCategoryData.articles);
+    }
+  }, [newsSearchData, newsCategoryData, searchQuery]);
+
+  // --- Effect to update sortableMovies when movie data changes ---
+  useEffect(() => {
+    if (searchQuery && moviesSearchData?.results) {
+      setSortableMovies(moviesSearchData.results);
+    } else if (!searchQuery && moviesData?.results) {
+      setSortableMovies(moviesData.results);
+    }
+  }, [moviesSearchData, moviesData, searchQuery]);
+
+  // --- Effect to update sortableSocialPosts when social post data changes ---
+  useEffect(() => {
+    if (searchQuery && socialSearchData?.posts) {
+      setSortableSocialPosts(socialSearchData.posts);
+    } else if (!searchQuery && socialData?.posts) {
+      setSortableSocialPosts(socialData.posts);
+    }
+  }, [socialSearchData, socialData, searchQuery]);
 
 
   // Reset pagination pages when search query or category changes
   useEffect(() => {
     setNewsPage(1);
     setMoviePage(1);
-    setSocialPage(1); // Reset social page
+    setSocialPage(1);
   }, [searchQuery, categoryToFetch]);
 
 
@@ -145,7 +263,7 @@ export default function Home() {
     setMoviePage((prevPage) => prevPage + 1);
   };
 
-  const handleLoadMoreSocialPosts = () => { // Handler for social posts
+  const handleLoadMoreSocialPosts = () => {
     setSocialPage((prevPage) => prevPage + 1);
   };
 
@@ -159,76 +277,106 @@ export default function Home() {
 
   let showLoadMoreNewsButton = false;
   let currentNewsTotalResults = 0;
-  let currentNewsArticleCount = 0;
+  // Note: currentNewsArticleCount now implicitly refers to sortableNewsArticles.length
 
   let showLoadMoreMoviesButton = false;
   let currentMoviesTotalResults = 0;
-  let currentMoviesArticleCount = 0;
+  // Note: currentMoviesArticleCount now implicitly refers to sortableMovies.length
 
   let showLoadMoreSocialPostsButton = false;
   let currentSocialPostsTotalResults = 0;
-  let currentSocialPostsArticleCount = 0;
+  // Note: currentSocialPostsArticleCount now implicitly refers to sortableSocialPosts.length
 
 
   if (searchQuery) {
     pageTitle = `Search Results for "${searchQuery}"`;
 
-    // News Search Content
+    // News Search Content (DND Enabled)
     if (newsSearchIsLoading && !newsSearchIsFetching) {
       newsContent = <LoadingSpinner message="Searching news..." />;
     } else if (newsSearchError) {
       newsContent = <ErrorMessage error={newsSearchError} type="News" />;
-    } else if (newsSearchData?.articles) {
+    } else if (sortableNewsArticles.length > 0) {
       newsContent = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {newsSearchData.articles.map((article: NewsArticle) => (
-            <NewsCard key={article.url + article.publishedAt} article={article} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndNews}
+        >
+          <SortableContext
+            items={sortableNewsArticles.map(article => article.url + article.publishedAt)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortableNewsArticles.map((article: NewsArticle) => (
+                <SortableNewsCard key={article.url + article.publishedAt} article={article} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       );
-      currentNewsTotalResults = newsSearchData.totalResults || 0;
-      currentNewsArticleCount = newsSearchData.articles.length;
-      showLoadMoreNewsButton = currentNewsArticleCount < currentNewsTotalResults && currentNewsArticleCount > 0;
+      currentNewsTotalResults = newsSearchData?.totalResults || 0;
+      showLoadMoreNewsButton = sortableNewsArticles.length < currentNewsTotalResults && sortableNewsArticles.length > 0;
     } else {
       newsContent = <NoResultsMessage message={`No news results for "${searchQuery}".`} />;
     }
 
-    // Movies Search Content
+    // Movies Search Content (DND Enabled)
     if (moviesSearchIsLoading && !moviesSearchIsFetching) {
       moviesContent = <LoadingSpinner message="Searching movies..." />;
     } else if (moviesSearchError) {
       moviesContent = <ErrorMessage error={moviesSearchError} type="Movies" />;
-    } else if (moviesSearchData?.results) {
+    } else if (sortableMovies.length > 0) {
       moviesContent = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {moviesSearchData.results.map((movie: Movie) => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndMovies}
+        >
+          <SortableContext
+            items={sortableMovies.map(movie => String(movie.id))}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortableMovies.map((movie: Movie) => (
+                <SortableMovieCard key={movie.id} movie={movie} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       );
-      currentMoviesTotalResults = moviesSearchData.total_results || 0;
-      currentMoviesArticleCount = moviesSearchData.results.length;
-      showLoadMoreMoviesButton = currentMoviesArticleCount < currentMoviesTotalResults && currentMoviesArticleCount > 0;
+      currentMoviesTotalResults = moviesSearchData?.total_results || 0;
+      showLoadMoreMoviesButton = sortableMovies.length < currentMoviesTotalResults && sortableMovies.length > 0;
     } else {
       moviesContent = <NoResultsMessage message={`No movie results for "${searchQuery}".`} />;
     }
 
-    // Social Search Content
+    // Social Search Content (NOW WITH DND)
     if (socialSearchIsLoading && !socialSearchIsFetching) {
       socialContent = <LoadingSpinner message="Searching social posts..." />;
     } else if (socialSearchError) {
       socialContent = <ErrorMessage error={socialSearchError} type="Social Posts" />;
-    } else if (socialSearchData?.posts) {
+    } else if (sortableSocialPosts.length > 0) { // Use local sortable state
       socialContent = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {socialSearchData.posts.map((post: SocialPost) => (
-            <SocialPostCard key={post.id} post={post} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndSocialPosts} // Use specific handler for Social Posts
+        >
+          <SortableContext
+            items={sortableSocialPosts.map(post => String(post.id))} // Use post IDs as sortable items
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortableSocialPosts.map((post: SocialPost) => (
+                <SortableSocialPostCard key={post.id} post={post} /> // Use SortableSocialPostCard
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       );
-      currentSocialPostsTotalResults = socialSearchData.totalResults || 0;
-      currentSocialPostsArticleCount = socialSearchData.posts.length;
-      showLoadMoreSocialPostsButton = currentSocialPostsArticleCount < currentSocialPostsTotalResults && currentSocialPostsArticleCount > 0;
+      currentSocialPostsTotalResults = socialSearchData?.totalResults || 0; // Use original data for total
+      showLoadMoreSocialPostsButton = sortableSocialPosts.length < currentSocialPostsTotalResults && sortableSocialPosts.length > 0;
     } else {
       socialContent = <NoResultsMessage message={`No social posts for "${searchQuery}".`} />;
     }
@@ -237,62 +385,92 @@ export default function Home() {
     pageTitle = 'Your Personalized Feed';
     subTitle = `Showing news for: ${categoryToFetch}`;
 
-    // News Category Content
+    // News Category Content (DND Enabled)
     if (newsCategoryIsLoading && !newsCategoryIsFetching) {
       newsContent = <LoadingSpinner message="Loading news..." />;
     } else if (newsCategoryError) {
       newsContent = <ErrorMessage error={newsCategoryError} type="News" />;
-    } else if (newsCategoryData?.articles) {
+    } else if (sortableNewsArticles.length > 0) {
       newsContent = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {newsCategoryData.articles.map((article: NewsArticle) => (
-            <NewsCard key={article.url + article.publishedAt} article={article} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndNews}
+        >
+          <SortableContext
+            items={sortableNewsArticles.map(article => article.url + article.publishedAt)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortableNewsArticles.map((article: NewsArticle) => (
+                <SortableNewsCard key={article.url + article.publishedAt} article={article} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       );
-      currentNewsTotalResults = newsCategoryData.totalResults || 0;
-      currentNewsArticleCount = newsCategoryData.articles.length;
-      showLoadMoreNewsButton = currentNewsArticleCount < currentNewsTotalResults && currentNewsArticleCount > 0;
+      currentNewsTotalResults = newsCategoryData?.totalResults || 0;
+      showLoadMoreNewsButton = sortableNewsArticles.length < currentNewsTotalResults && sortableNewsArticles.length > 0;
     } else {
       newsContent = <NoResultsMessage message={`No news articles for "${categoryToFetch}".`} />;
     }
 
-    // Movies Content
+    // Movies Content (DND Enabled)
     if (moviesIsLoading && !moviesIsFetching) {
       moviesContent = <LoadingSpinner message="Loading movies..." />;
     } else if (moviesError) {
       moviesContent = <ErrorMessage error={moviesError} type="Movies" />;
-    } else if (moviesData?.results) {
+    } else if (sortableMovies.length > 0) {
       moviesContent = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {moviesData.results.map((movie: Movie) => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndMovies}
+        >
+          <SortableContext
+            items={sortableMovies.map(movie => String(movie.id))}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortableMovies.map((movie: Movie) => (
+                <SortableMovieCard key={movie.id} movie={movie} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       );
-      currentMoviesTotalResults = moviesData.total_results || 0;
-      currentMoviesArticleCount = moviesData.results.length;
-      showLoadMoreMoviesButton = currentMoviesArticleCount < currentMoviesTotalResults && currentMoviesArticleCount > 0;
+      currentMoviesTotalResults = moviesData?.total_results || 0;
+      showLoadMoreMoviesButton = sortableMovies.length < currentMoviesTotalResults && sortableMovies.length > 0;
     } else {
       moviesContent = <NoResultsMessage message="No popular movies found." />;
     }
 
-    // Social Posts Content
+    // Social Posts Content (NOW WITH DND)
     if (socialIsLoading && !socialIsFetching) {
       socialContent = <LoadingSpinner message="Loading social posts..." />;
     } else if (socialError) {
       socialContent = <ErrorMessage error={socialError} type="Social Posts" />;
-    } else if (socialData?.posts) {
+    } else if (sortableSocialPosts.length > 0) { // Use local sortable state
       socialContent = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {socialData.posts.map((post: SocialPost) => (
-            <SocialPostCard key={post.id} post={post} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndSocialPosts} // Use specific handler for Social Posts
+        >
+          <SortableContext
+            items={sortableSocialPosts.map(post => String(post.id))} // Use post IDs as sortable items
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortableSocialPosts.map((post: SocialPost) => (
+                <SortableSocialPostCard key={post.id} post={post} /> // Use SortableSocialPostCard
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       );
-      currentSocialPostsTotalResults = socialData.totalResults || 0;
-      currentSocialPostsArticleCount = socialData.posts.length;
-      showLoadMoreSocialPostsButton = currentSocialPostsArticleCount < currentSocialPostsTotalResults && currentSocialPostsArticleCount > 0;
+      currentSocialPostsTotalResults = socialData?.totalResults || 0; // Use original data for total
+      showLoadMoreSocialPostsButton = sortableSocialPosts.length < currentSocialPostsTotalResults && sortableSocialPosts.length > 0;
     } else {
       socialContent = <NoResultsMessage message="No trending social posts found." />;
     }
@@ -325,11 +503,12 @@ export default function Home() {
                         disabled={newsSearchIsLoading || newsSearchIsFetching}
                         className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
-                        {newsSearchIsFetching ? 'Loading...' : `Load More News (${currentNewsArticleCount}/${currentNewsTotalResults})`}
+                        {newsSearchIsFetching ? 'Loading...' : `Load More News (${sortableNewsArticles.length}/${currentNewsTotalResults})`}
                     </button>
                 </div>
             )}
           </section>
+
           <section className="mb-10">
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
               Movie Results
@@ -343,11 +522,13 @@ export default function Home() {
                         disabled={moviesSearchIsLoading || moviesSearchIsFetching}
                         className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
-                        {moviesSearchIsFetching ? 'Loading...' : `Load More Movies (${currentMoviesArticleCount}/${currentMoviesTotalResults})`}
+                        {moviesSearchIsFetching ? 'Loading...' : `Load More Movies (${sortableMovies.length}/${currentMoviesTotalResults})`}
                     </button>
                 </div>
             )}
           </section>
+
+          {/* Social Section: Now with DND */}
           <section>
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
               Social Post Results
@@ -361,7 +542,7 @@ export default function Home() {
                         disabled={socialSearchIsLoading || socialSearchIsFetching}
                         className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
-                        {socialSearchIsFetching ? 'Loading...' : `Load More Posts (${currentSocialPostsArticleCount}/${currentSocialPostsTotalResults})`}
+                        {socialSearchIsFetching ? 'Loading...' : `Load More Posts (${sortableSocialPosts.length}/${currentSocialPostsTotalResults})`}
                     </button>
                 </div>
             )}
@@ -382,11 +563,12 @@ export default function Home() {
                         disabled={newsCategoryIsLoading || newsCategoryIsFetching}
                         className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
-                        {newsCategoryIsFetching ? 'Loading...' : `Load More News (${currentNewsArticleCount}/${currentNewsTotalResults})`}
+                        {newsCategoryIsFetching ? 'Loading...' : `Load More News (${sortableNewsArticles.length}/${currentNewsTotalResults})`}
                     </button>
                 </div>
             )}
           </section>
+
           <section className="mb-10">
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
               Popular Movies
@@ -400,11 +582,13 @@ export default function Home() {
                         disabled={moviesIsLoading || moviesIsFetching}
                         className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
-                        {moviesIsFetching ? 'Loading...' : `Load More Movies (${currentMoviesArticleCount}/${currentMoviesTotalResults})`}
+                        {moviesIsFetching ? 'Loading...' : `Load More Movies (${sortableMovies.length}/${currentMoviesTotalResults})`}
                     </button>
                 </div>
             )}
           </section>
+
+          {/* Social Section: Now with DND */}
           <section>
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
               Trending Social Posts
@@ -418,7 +602,7 @@ export default function Home() {
                         disabled={socialIsLoading || socialIsFetching}
                         className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
-                        {socialIsFetching ? 'Loading...' : `Load More Posts (${currentSocialPostsArticleCount}/${currentSocialPostsTotalResults})`}
+                        {socialIsFetching ? 'Loading...' : `Load More Posts (${sortableSocialPosts.length}/${currentSocialPostsTotalResults})`}
                     </button>
                 </div>
             )}

@@ -1,0 +1,79 @@
+{
+  "trending_posts": [
+    {
+      "id": "soc1",
+      "author": {
+        "name": "TechExplorer",
+        "avatarUrl": "https://picsum.photos/id/1018/40"
+      },
+      "title": "AI Breakthrough in Robotics!",
+      "content": "Just witnessed an incredible AI breakthrough in robotics! The future is here. #AI #Robotics #Innovation",
+      "imageUrl": "https://picsum.photos/id/237/400/300",
+      "hashtags": ["AI", "Robotics", "Innovation"],
+      "likes": 1250,
+      "comments": 230,
+      "shares": 180,
+      "timestamp": "2025-06-28T14:30:00Z"
+    },
+    {
+      "id": "soc2",
+      "author": {
+        "name": "SportsFanatic",
+        "avatarUrl": "https://picsum.photos/id/1015/40"
+      },
+      "title": "Underdogs Win Big Game!",
+      "content": "What a game! The underdogs pulled off an amazing win. My jaw is still on the floor! #Sports #Gaming #Unexpected",
+      "imageUrl": "https://picsum.photos/id/1025/400/300",
+      "hashtags": ["Sports", "Gaming", "Unexpected"],
+      "likes": 890,
+      "comments": 110,
+      "shares": 75,
+      "timestamp": "2025-06-28T10:15:00Z"
+    },
+    {
+      "id": "soc3",
+      "author": {
+        "name": "FoodieAdventures",
+        "avatarUrl": "https://picsum.photos/id/103/40"
+      },
+      "title": "Delicious Street Food Discovery!",
+      "content": "Discovered the most delicious street food today! This fusion taco is a game changer. #Foodie #StreetFood #Tacos",
+      "imageUrl": "https://picsum.photos/id/1084/400/300",
+      "hashtags": ["Foodie", "StreetFood", "Tacos"],
+      "likes": 2100,
+      "comments": 340,
+      "shares": 210,
+      "timestamp": "2025-06-27T18:00:00Z"
+    },
+    {
+      "id": "soc4",
+      "author": {
+        "name": "TravelBug",
+        "avatarUrl": "https://picsum.photos/id/1043/40"
+      },
+      "title": "Breathtaking Mountain Sunrise!",
+      "content": "Sunrise over the mountains was breathtaking. Truly felt connected to nature. #Travel #Nature #Mountains",
+      "imageUrl": "https://picsum.photos/id/1069/400/300",
+      "hashtags": ["Travel", "Nature", "Mountains"],
+      "likes": 1500,
+      "comments": 190,
+      "shares": 120,
+      "timestamp": "2025-06-27T06:45:00Z"
+    },
+    {
+      "id": "soc5",
+      "author": {
+        "name": "ArtLover",
+        "avatarUrl": "https://picsum.photos/id/1080/40"
+      },
+      "title": "Gallery Visit Inspiration!",
+      "content": "Spent the afternoon at the gallery. So much talent and emotion captured in every piece. #Art #Culture #Gallery",
+      "imageUrl": "https://picsum.photos/id/1081/400/300",
+      "hashtags": ["Art", "Culture", "Gallery"],
+      "likes": 950,
+      "comments": 80,
+      "shares": 40,
+      "timestamp": "2025-06-26T16:00:00Z"
+    }
+  ]
+}

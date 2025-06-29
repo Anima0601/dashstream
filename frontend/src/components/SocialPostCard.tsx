@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import Image from 'next/image';
 import { SocialPost } from '../types/social';
@@ -19,11 +20,13 @@ const SocialPostCard: React.FC<SocialPostCardProps> = ({ post }) => {
             width={40}
             height={40}
             className="rounded-full mr-3 object-cover"
+            // For fixed width/height images like avatars, `layout` and `objectFit` are not needed.
+            // width and height props are sufficient.
           />
         )}
         <div>
-          {/* Access name from post.author */}
-          <p className="font-semibold text-gray-900 dark:text-white">{post.author.name}</p> {/* Corrected */}
+        
+          <p className="font-semibold text-gray-900 dark:text-white">{post.author.name}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
           {new Date(post.timestamp).toLocaleDateString()}
           </p>
@@ -40,8 +43,12 @@ const SocialPostCard: React.FC<SocialPostCardProps> = ({ post }) => {
           <Image
             src={post.imageUrl}
             alt={post.title}
-            layout="fill"
-            objectFit="cover"
+            // --- CRITICAL CHANGES HERE ---
+            // Replaced `layout="fill"` with just `fill` prop
+            fill
+            // Replaced `objectFit="cover"` with `style={{ objectFit: "cover" }}`
+            style={{ objectFit: "cover" }}
+            // -----------------------------
             className="rounded-md"
           />
         </div>
@@ -70,4 +77,4 @@ const SocialPostCard: React.FC<SocialPostCardProps> = ({ post }) => {
   );
 };
 
-export default SocialPostCard;
+export default SocialPostCard; 

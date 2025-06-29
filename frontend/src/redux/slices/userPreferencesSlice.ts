@@ -1,6 +1,7 @@
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface UserPreferencesState {
+export interface UserPreferencesState { 
   favoriteCategories: string[];
   darkMode: boolean;
 }

@@ -3,6 +3,7 @@ const nextConfig = {
   images: {
     domains: [
       'picsum.photos',
+      'www.rudebaguette.com',
       'source.unsplash.com',
       'via.placeholder.com',
       'newsapi.org',
