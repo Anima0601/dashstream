@@ -33,6 +33,8 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
   };
 
   const toggleFavorite = () => {
+     console.log('Favorite button clicked for:', movie.title); // Add this line
+  console.log('Is currently favorited:', isFavorited);
     if (isFavorited) {
       dispatch(removeFavorite({ id: String(movie.id), type: 'movie' }));
     } else {

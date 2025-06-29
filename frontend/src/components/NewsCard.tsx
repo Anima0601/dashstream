@@ -32,6 +32,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   };
 
   const toggleFavorite = () => {
+     console.log('Favorite button clicked for:', article.title); // Add this line
+  console.log('Is currently favorited:', isFavorited);
     if (isFavorited) {
       dispatch(removeFavorite({ id: article.url, type: 'news' }));
     } else {
